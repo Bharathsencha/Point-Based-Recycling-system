@@ -32,7 +32,7 @@ export default function Home() {
                 </div>
               }
             >
-              <RecyclableItems />
+              <RecyclableItems limit={3} />
             </Suspense>
           </div>
         </div>
