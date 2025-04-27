@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -16,15 +16,27 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import ConfettiExplosion from "react-confetti-explosion"
+import { useAuth } from "@/lib/authContext"
 
 export default function CheckoutPage() {
   const { cart, clearCart } = useCart()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState("points")
   const router = useRouter()
   const { toast } = useToast()
+  const { user } = useAuth()
+
+  // Redirect to login if not logged in
+  useEffect(() => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to access the checkout page.",
+        variant: "destructive",
+      })
+      router.push("/login")
+    }
+  }, [user, router, toast])
 
   const calculateTotal = () => {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0)
@@ -32,47 +44,17 @@ export default function CheckoutPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
     setIsSubmitting(true)
 
     // Simulate checkout process
     setTimeout(() => {
       setIsSubmitting(false)
-      setIsSuccess(true)
+      // Save order summary in sessionStorage for success page
+      sessionStorage.setItem("orderSummary", JSON.stringify({ cart, total: calculateTotal(), paymentMethod }))
       clearCart()
-
-      // Redirect to home after a delay
-      setTimeout(() => {
-        router.push("/")
-        toast({
-          title: "Checkout complete",
-          description: "Thank you for your submission!",
-        })
-      }, 5000)
+      router.push("/checkout/success")
     }, 2000)
-  }
-
-  if (isSuccess) {
-    return (
-      <div className="container py-12">
-        <div className="max-w-md mx-auto text-center">
-          <ConfettiExplosion force={0.8} duration={3000} particleCount={100} width={1600} />
-          <div className="mb-6 flex justify-center">
-            <div className="rounded-full bg-green-100 p-3">
-              <CheckCircle2 className="h-12 w-12 text-green-600" />
-            </div>
-          </div>
-          <h1 className="text-3xl font-bold mb-4">Checkout Complete!</h1>
-          <p className="text-muted-foreground mb-8">
-            Your recycling submission has been received. Thank you for contributing to a greener planet!
-          </p>
-          <div className="bg-muted p-4 rounded-lg mb-8">
-            <p className="font-medium">Points earned: {Math.floor(calculateTotal() * 10)}</p>
-            <p className="text-sm text-muted-foreground">Your points will be added to your account balance</p>
-          </div>
-          <Button onClick={() => router.push("/")}>Return to Home</Button>
-        </div>
-      </div>
-    )
   }
 
   if (cart.length === 0) {

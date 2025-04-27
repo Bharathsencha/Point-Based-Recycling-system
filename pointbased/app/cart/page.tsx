@@ -57,7 +57,7 @@ export default function CartPage() {
           <p className="text-muted-foreground mb-8">
             Looks like you haven't added any recyclable items to your cart yet.
           </p>
-          <Button onClick={() => router.push("/")}>Browse Recyclable Items</Button>
+          <Button onClick={() => router.push("/recyclables")}>Browse Recyclable Items</Button>
         </div>
       </div>
     )

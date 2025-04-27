@@ -75,12 +75,15 @@ const sizes = [
   { value: "2L", label: "2 Liters", multiplier: 3 },
 ]
 
-export default function RecyclableItems() {
+export default function RecyclableItems({ limit, styleVariant = "full" }: { limit?: number, styleVariant?: "compact" | "full" }) {
   const { addToCart } = useCart()
   const { toast } = useToast()
 
+  // Limit items if limit prop is provided
+  const displayedItems = limit ? items.slice(0, limit) : items
+
   // State for each item's quantity and selected size
-  const [itemStates, setItemStates] = useState(items.map(() => ({ quantity: 1, size: "250ml", showInfo: false })))
+  const [itemStates, setItemStates] = useState(displayedItems.map(() => ({ quantity: 1, size: "250ml", showInfo: false })))
 
   const handleQuantityChange = (index: number, change: number) => {
     setItemStates((prev) => {
@@ -112,7 +115,7 @@ export default function RecyclableItems() {
   }
 
   const handleAddToCart = (index: number) => {
-    const item = items[index]
+    const item = displayedItems[index]
     const state = itemStates[index]
     const price = calculatePrice(item.basePrice, state.size)
 
@@ -139,43 +142,43 @@ export default function RecyclableItems() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8 w-full">
-      {items.map((item, index) => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-8 w-full px-4 md:px-0">
+      {displayedItems.map((item, index) => (
         <motion.div
           key={item.id}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: index * 0.1 }}
-          whileHover={{ y: -5 }}
+          transition={{ duration: 0.4, delay: index * 0.15 }}
+          whileHover={{ y: -8, boxShadow: "0 10px 15px rgba(34,197,94,0.3)" }}
           className="h-full"
         >
-          <Card className="overflow-hidden h-full flex flex-col transition-all duration-300 hover:shadow-lg hover:shadow-green-100/20 dark:hover:shadow-green-900/20 relative">
+          <Card className="overflow-hidden h-full flex flex-col transition-all duration-400 hover:shadow-xl hover:shadow-green-400/30 dark:hover:shadow-green-900/40 rounded-xl">
             {item.isNew && (
               <div className="absolute top-3 left-3 z-10">
-                <Badge className="bg-red-500 hover:bg-red-600">NEW</Badge>
+                <Badge className="bg-red-600 hover:bg-red-700 text-white font-semibold">NEW</Badge>
               </div>
             )}
 
-            <div className="relative aspect-square bg-muted group">
+            <div className="relative aspect-square bg-muted group rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
               <Image
                 src={item.image || "/placeholder.svg"}
                 alt={item.name}
                 fill
-                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                className="object-cover transition-transform duration-300 group-hover:scale-110"
               />
-              <Badge className="absolute top-2 right-2">{item.category}</Badge>
+              <Badge className="absolute top-2 right-2 bg-green-600 text-white font-semibold">{item.category}</Badge>
             </div>
 
-            <CardContent className="p-6 flex-1">
+            <CardContent className="p-5 flex-1">
               <div className="flex justify-between items-start">
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-xl">{item.name}</h3>
-                  <p className="text-green-600 dark:text-green-400 font-medium">
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-xl text-gray-900 dark:text-gray-100">{item.name}</h3>
+                  <p className="text-green-700 dark:text-green-400 font-semibold text-base">
                     ₹{calculatePrice(item.basePrice, itemStates[index].size).toFixed(2)} per unit
                   </p>
                 </div>
                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => toggleInfo(index)}>
-                  <Info className="h-4 w-4" />
+                  <Info className="h-5 w-5 text-gray-600 dark:text-gray-300" />
                 </Button>
               </div>
 
@@ -185,18 +188,18 @@ export default function RecyclableItems() {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="mt-3 text-sm bg-muted/50 p-3 rounded-md"
+                    className="mt-3 text-sm bg-green-50 dark:bg-green-900/30 p-3 rounded-md text-green-900 dark:text-green-200"
                   >
-                    <p className="text-muted-foreground">{item.impact}</p>
+                    <p>{item.impact}</p>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              <div className="mt-4 space-y-4">
+              <div className="mt-5 space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Size</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Size</label>
                   <Select value={itemStates[index].size} onValueChange={(value) => handleSizeChange(index, value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="text-sm">
                       <SelectValue placeholder="Select size" />
                     </SelectTrigger>
                     <SelectContent>
@@ -210,38 +213,38 @@ export default function RecyclableItems() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Quantity</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Quantity</label>
                   <div className="flex items-center">
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-9 w-9 rounded-r-none"
+                      className="h-8 w-8 rounded-r-none"
                       onClick={() => handleQuantityChange(index, -1)}
                     >
-                      <Minus className="h-4 w-4" />
+                      <Minus className="h-5 w-5" />
                     </Button>
-                    <div className="h-9 px-4 flex items-center justify-center border border-x-0">
+                    <div className="h-8 px-4 flex items-center justify-center border border-x-0 text-base font-semibold text-gray-900 dark:text-gray-100">
                       {itemStates[index].quantity}
                     </div>
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-9 w-9 rounded-l-none"
+                      className="h-8 w-8 rounded-l-none"
                       onClick={() => handleQuantityChange(index, 1)}
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-5 w-5" />
                     </Button>
                   </div>
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="p-6 pt-0">
+            <CardFooter className="p-5 pt-0">
               <Button className="w-full relative overflow-hidden group" onClick={() => handleAddToCart(index)}>
-                <span className="relative z-10 flex items-center">
-                  <ShoppingCart className="mr-2 h-4 w-4" />
+                <span className="relative z-10 flex items-center text-base font-semibold">
+                  <ShoppingCart className="mr-2 h-5 w-5" />
                   Add to Cart
                 </span>
-                <span className="absolute inset-0 bg-green-700 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></span>
+                <span className="absolute inset-0 bg-green-700 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left rounded"></span>
               </Button>
             </CardFooter>
           </Card>
