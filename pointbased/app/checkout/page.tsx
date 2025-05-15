@@ -1,30 +1,30 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { useToast } from "@/components/ui/use-toast"
-import { useCart } from "@/components/cart-provider"
-import { CheckCircle2, ArrowLeft, Loader2 } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { useAuth } from "@/lib/authContext"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/components/ui/use-toast";
+import { useCart } from "@/components/cart-provider";
+import { CheckCircle2, ArrowLeft, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/lib/authContext";
 
 export default function CheckoutPage() {
-  const { cart, clearCart } = useCart()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState("points")
-  const router = useRouter()
-  const { toast } = useToast()
-  const { user } = useAuth()
+  const { cart, clearCart } = useCart();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("points");
+  const router = useRouter();
+  const { toast } = useToast();
+  const { user } = useAuth();
 
   // Redirect to login if not logged in
   useEffect(() => {
@@ -33,29 +33,55 @@ export default function CheckoutPage() {
         title: "Login Required",
         description: "Please log in to access the checkout page.",
         variant: "destructive",
-      })
-      router.push("/login")
+      });
+      router.push("/login");
     }
-  }, [user, router, toast])
+  }, [user, router, toast]);
 
   const calculateTotal = () => {
-    return cart.reduce((total, item) => total + item.price * item.quantity, 0)
-  }
+    return cart.reduce((total, item) => total + item.price * item.quantity, 0);
+  };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
-    // Simulate checkout process
-    setTimeout(() => {
-      setIsSubmitting(false)
+    try {
+      // Call API to save purchase
+      const response = await fetch("/api/purchases", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cart,
+          total: calculateTotal(),
+          paymentMethod,
+        }),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to save purchase");
+      }
+
       // Save order summary in sessionStorage for success page
-      sessionStorage.setItem("orderSummary", JSON.stringify({ cart, total: calculateTotal(), paymentMethod }))
-      clearCart()
-      router.push("/checkout/success")
-    }, 2000)
-  }
+      sessionStorage.setItem(
+        "orderSummary",
+        JSON.stringify({ cart, total: calculateTotal(), paymentMethod })
+      );
+      clearCart();
+      router.push("/checkout/success");
+    } catch (error) {
+      toast({
+        title: "Checkout Failed",
+        description: error instanceof Error ? error.message : "Something went wrong",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (cart.length === 0) {
     return (
@@ -66,7 +92,7 @@ export default function CheckoutPage() {
           <Button onClick={() => router.push("/")}>Browse Recyclable Items</Button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -218,5 +244,5 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

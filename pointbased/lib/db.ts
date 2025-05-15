@@ -1,4 +1,3 @@
-// lib/db.ts
 import Database from 'better-sqlite3';
 import { join } from 'path';
 import fs from 'fs';
@@ -32,6 +31,32 @@ export function initializeDb() {
       mobile TEXT NOT NULL,
       password TEXT NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+  // New purchases table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS purchases (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      total_amount REAL NOT NULL,
+      payment_method TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+  `);
+
+  // New purchase_items table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS purchase_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      purchase_id INTEGER NOT NULL,
+      item_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      size TEXT NOT NULL,
+      quantity INTEGER NOT NULL,
+      price REAL NOT NULL,
+      image TEXT,
+      FOREIGN KEY (purchase_id) REFERENCES purchases(id)
     );
   `);
 }
