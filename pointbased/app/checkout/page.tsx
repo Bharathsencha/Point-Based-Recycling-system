@@ -1,82 +1,103 @@
-"use client";
+'use client';
 
-import type React from "react";
-
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/components/ui/use-toast";
-import { useCart } from "@/components/cart-provider";
-import { CheckCircle2, ArrowLeft, Loader2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { useAuth } from "@/lib/authContext";
+import type React from 'react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/components/ui/use-toast';
+import { useCart } from '@/components/cart-provider';
+import { CheckCircle2, ArrowLeft, Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 
 export default function CheckoutPage() {
   const { cart, clearCart } = useCart();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("points");
+  const [paymentMethod, setPaymentMethod] = useState('points');
+  const [recycleStation, setRecycleStation] = useState('');
+  const [submissionDate, setSubmissionDate] = useState('');
+  const [notes, setNotes] = useState('');
   const router = useRouter();
   const { toast } = useToast();
-  const { user } = useAuth();
-
-  // Redirect to login if not logged in
-  useEffect(() => {
-    if (!user) {
-      toast({
-        title: "Login Required",
-        description: "Please log in to access the checkout page.",
-        variant: "destructive",
-      });
-      router.push("/login");
-    }
-  }, [user, router, toast]);
 
   const calculateTotal = () => {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+ const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!recycleStation || !submissionDate) {
+      toast({
+        title: 'Missing Fields',
+        description: 'Please select a recycle station and submission date.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setIsSubmitting(true);
 
     try {
-      // Call API to save purchase
-      const response = await fetch("/api/purchases", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cart,
-          total: calculateTotal(),
-          paymentMethod,
-        }),
-        credentials: "include",
+      toast({
+        title: 'Processing',
+        description: 'Sending checkout request...',
       });
 
+      console.log('Sending request to /final-checkout');
+      const response = await fetch('/api/final-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          recycleStation,
+          orderDetails: cart,
+          paymentMethod,
+        }),
+        credentials: 'include',
+      });
+
+      console.log('Response status:', response.status);
+      const data = await response.json();
+      console.log('Response data:', data);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to save purchase");
+        if (data.error.includes('Not authenticated') || data.error.includes('Invalid token')) {
+          toast({
+            title: 'Authentication Error',
+            description: 'Please log in again.',
+            variant: 'destructive',
+          });
+          router.push('/login');
+          return;
+        }
+        throw new Error(data.error || 'Failed to complete checkout');
       }
 
-      // Save order summary in sessionStorage for success page
+      toast({
+        title: 'Success',
+        description: 'Checkout completed successfully!',
+      });
+
       sessionStorage.setItem(
-        "orderSummary",
-        JSON.stringify({ cart, total: calculateTotal(), paymentMethod })
+        'orderSummary',
+        JSON.stringify({ cart, total: calculateTotal(), paymentMethod, recycleStation })
       );
       clearCart();
-      router.push("/checkout/success");
+      router.push('/checkout/success');
     } catch (error) {
+      console.error('Checkout error:', error);
       toast({
-        title: "Checkout Failed",
-        description: error instanceof Error ? error.message : "Something went wrong",
-        variant: "destructive",
+        title: 'Checkout Failed',
+        description: error instanceof Error ? error.message : 'Something went wrong. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setIsSubmitting(false);
@@ -89,7 +110,7 @@ export default function CheckoutPage() {
         <div className="max-w-md mx-auto text-center">
           <h1 className="text-3xl font-bold mb-4">Your Cart is Empty</h1>
           <p className="text-muted-foreground mb-8">You need to add items to your cart before checking out.</p>
-          <Button onClick={() => router.push("/")}>Browse Recyclable Items</Button>
+          <Button onClick={() => router.push('/')}>Browse Recyclable Items</Button>
         </div>
       </div>
     );
@@ -98,7 +119,7 @@ export default function CheckoutPage() {
   return (
     <div className="container py-12">
       <div className="max-w-4xl mx-auto">
-        <Button variant="ghost" className="mb-6" onClick={() => router.push("/cart")}>
+        <Button variant="ghost" className="mb-6" onClick={() => router.push('/cart')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Cart
         </Button>
@@ -113,33 +134,39 @@ export default function CheckoutPage() {
                   <CardTitle>Submission Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Full Name</Label>
-                      <Input id="name" required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input id="email" type="email" required />
-                    </div>
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number</Label>
-                      <Input id="phone" type="tel" required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="date">Submission Date</Label>
-                      <Input id="date" type="date" required />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="recycle-station">Select Recycle Station</Label>
+                    <Select value={recycleStation} onValueChange={setRecycleStation} required>
+                      <SelectTrigger id="recycle-station">
+                        <SelectValue placeholder="Choose a recycle station" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Koramangala">Koramangala</SelectItem>
+                        <SelectItem value="Indiranagar">Indiranagar</SelectItem>
+                        <SelectItem value="Whitefield">Whitefield</SelectItem>
+                        <SelectItem value="Jayanagar">Jayanagar</SelectItem>
+                        <SelectItem value="Malleshwaram">Malleshwaram</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="address">Collection Address</Label>
-                    <Textarea id="address" required />
+                    <Label htmlFor="date">Submission Date</Label>
+                    <Input
+                      id="date"
+                      type="date"
+                      value={submissionDate}
+                      onChange={(e) => setSubmissionDate(e.target.value)}
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="notes">Additional Notes</Label>
-                    <Textarea id="notes" placeholder="Any special instructions..." />
+                    <Textarea
+                      id="notes"
+                      placeholder="Any special instructions..."
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -177,7 +204,7 @@ export default function CheckoutPage() {
                     Processing...
                   </>
                 ) : (
-                  "Complete Checkout"
+                  'Complete Checkout'
                 )}
               </Button>
             </form>
@@ -194,7 +221,7 @@ export default function CheckoutPage() {
                     <div key={`${item.id}-${item.size}`} className="flex justify-between py-2">
                       <div className="flex items-center gap-2">
                         <div className="relative w-10 h-10 rounded overflow-hidden bg-muted">
-                          <Image src={item.image || "/placeholder.svg"} alt={item.name} fill className="object-cover" />
+                          <Image src={item.image || '/placeholder.svg'} alt={item.name} fill className="object-cover" />
                         </div>
                         <div>
                           <p className="text-sm font-medium">{item.name}</p>
@@ -228,7 +255,7 @@ export default function CheckoutPage() {
                   <span>₹{calculateTotal().toFixed(2)}</span>
                 </div>
 
-                {paymentMethod === "points" && (
+                {paymentMethod === 'points' && (
                   <div className="bg-green-50 dark:bg-green-950 p-3 rounded-lg">
                     <p className="text-sm font-medium text-green-700 dark:text-green-300">
                       You'll earn {Math.floor(calculateTotal() * 10)} points

@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card, CardContent, CardDescription, CardFooter,
+  CardHeader, CardTitle
+} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { LogOut, User, Mail, Phone, Loader2, BadgeCheck } from "lucide-react"
@@ -15,8 +18,15 @@ export default function ProfilePage() {
   const { toast } = useToast()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
+  // ⬇️ State for stats
+  const [stats, setStats] = useState({
+    points: "--",
+    items: "--",
+    rewards: "--",
+  })
+
+  // 🔁 Call this only after user is available
   useEffect(() => {
-    // This ensures the user is redirected if not authenticated
     if (!loading && !user) {
       toast({
         title: "Authentication required",
@@ -25,7 +35,34 @@ export default function ProfilePage() {
       })
       router.push('/login?callbackUrl=/profile')
     }
+
+    if (!loading && user?.email) {
+      const fetchStats = async () => {
+        try {
+          const res = await fetch("/api/user/stats", {
+            method: "POST",
+            body: JSON.stringify({ email: user.email }),
+          })
+          const data = await res.json()
+          setStats({
+            points: data.points ?? "--",
+            items: data.items ?? "--",
+            rewards: data.rewards ?? "--",
+          })
+        } catch (err) {
+          console.error("Failed to fetch stats", err)
+          toast({
+            title: "Failed to load stats",
+            description: "We couldn't retrieve your recycling data.",
+            variant: "destructive",
+          })
+        }
+      }
+
+      fetchStats()
+    }
   }, [user, loading, router, toast])
+
 
   const handleLogout = async () => {
     try {
@@ -103,47 +140,60 @@ export default function ProfilePage() {
             <h3 className="font-medium text-lg mb-2">Your recycling stats</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div className="p-4 bg-primary/10 rounded-lg text-center">
-                <p className="text-2xl font-bold text-primary">250</p>
+                <p className="text-2xl font-bold text-primary">{stats.points}</p>
                 <p className="text-sm text-muted-foreground">Points earned</p>
               </div>
               <div className="p-4 bg-primary/10 rounded-lg text-center">
-                <p className="text-2xl font-bold text-primary">12</p>
+                <p className="text-2xl font-bold text-primary">{stats.items}</p>
                 <p className="text-sm text-muted-foreground">Items recycled</p>
               </div>
               <div className="p-4 bg-primary/10 rounded-lg text-center">
-                <p className="text-2xl font-bold text-primary">3</p>
+                <p className="text-2xl font-bold text-primary">{stats.rewards}</p>
                 <p className="text-sm text-muted-foreground">Rewards redeemed</p>
               </div>
+
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex flex-col sm:flex-row gap-3">
-          <Button 
-            variant="outline" 
-            className="w-full"
-            onClick={() => router.push('/rewards')}
-          >
-            View Available Rewards
-          </Button>
-          <Button 
-            onClick={handleLogout} 
-            variant="destructive" 
-            className="w-full"
-            disabled={isLoggingOut}
-          >
-            {isLoggingOut ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Logging out...
-              </>
-            ) : (
-              <>
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-              </>
-            )}
-          </Button>
-        </CardFooter>
+<CardFooter className="flex flex-col gap-4">
+  <div className="w-full flex flex-col sm:flex-row gap-4">
+    <Button
+      variant="outline"
+      className="w-full"
+      onClick={() => router.push("/available-rewards")}
+    >
+      View Available Rewards
+    </Button>
+
+    <Button
+      variant="outline"
+      className="w-full"
+      onClick={() => router.push("/history")}
+    >
+      Transaction History
+    </Button>
+  </div>
+
+  <Button
+    onClick={handleLogout}
+    variant="destructive"
+    className="w-full"
+    disabled={isLoggingOut}
+  >
+    {isLoggingOut ? (
+      <>
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Logging out...
+      </>
+    ) : (
+      <>
+        <LogOut className="mr-2 h-4 w-4" />
+        Logout
+      </>
+    )}
+  </Button>
+</CardFooter>
+
       </Card>
     </div>
   )

@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     // For each purchase, get items
     const purchaseItemsStmt = db.prepare(`
-      SELECT item_id, name, size, quantity, price, image
+      SELECT item_id, name, size, quantity, price, is_reward
       FROM purchase_items
       WHERE purchase_id = ?
     `);
@@ -37,12 +37,16 @@ export async function GET(request: NextRequest) {
       total_amount: number;
       payment_method: string;
       created_at: string;
+      
     }
 
-    const purchasesWithItems = (purchases as Purchase[]).map((purchase) => {
-      const items = purchaseItemsStmt.all(purchase.id);
-      return { ...purchase, items };
-    });
+    const purchasesWithItems = (purchases as Purchase[])
+      .map((purchase) => {
+        const items = purchaseItemsStmt.all(purchase.id);
+        return items.length > 0 ? { ...purchase, items } : null;
+      })
+      .filter(Boolean);
+
 
     return NextResponse.json({ purchases: purchasesWithItems }, { status: 200 });
   } catch (error) {

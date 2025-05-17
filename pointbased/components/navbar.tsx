@@ -20,7 +20,8 @@ import {
   BadgeCheck, 
   Leaf, 
   User,
-  LogOut
+  LogOut,
+  History
 } from "lucide-react"
 
 import { useAuth } from "@/lib/authContext"
@@ -48,6 +49,8 @@ export default function Navbar() {
   const routes = [
     { name: "Home", path: "/" },
     { name: "Recyclables", path: "/recyclables" },
+    { name: "Rewards", path: "/available-rewards" },
+
     { name: "About Us", path: "/about" }
   ]
 
@@ -138,9 +141,9 @@ export default function Navbar() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/rewards" className="cursor-pointer flex w-full">
-                    <BadgeCheck className="mr-2 h-4 w-4" />
-                    <span>My Rewards</span>
+                  <Link href="/history" className="cursor-pointer flex w-full">
+                    <History className="mr-2 h-4 w-4" />
+                    <span>My History</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
