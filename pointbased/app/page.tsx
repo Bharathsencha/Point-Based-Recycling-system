@@ -40,9 +40,8 @@ export default function Home() {
       <HowItWorks />
       <section className="w-full py-12 md:py-24 bg-muted">
         <div className="container px-4 md:px-6">
-          <div className="grid gap-8 md:grid-cols-2">
+          <div className="grid gap-8 md:grid-cols-1">
             <ImpactCounter />
-            <CommunityLeaderboard />
           </div>
         </div>
       </section>

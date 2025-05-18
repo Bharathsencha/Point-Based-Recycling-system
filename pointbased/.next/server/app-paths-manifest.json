@@ -1,11 +1,9 @@
 {
-  "/api/auth/me/route": "app/api/auth/me/route.js",
-  "/_not-found/page": "app/_not-found/page.js",
-  "/api/user/stats/route": "app/api/user/stats/route.js",
-  "/cart/page": "app/cart/page.js",
+  "/page": "app/page.js",
+  "/recyclables/page": "app/recyclables/page.js",
   "/checkout/page": "app/checkout/page.js",
   "/checkout/success/page": "app/checkout/success/page.js",
   "/login/page": "app/login/page.js",
-  "/page": "app/page.js",
-  "/profile/page": "app/profile/page.js"
+  "/available-rewards/page": "app/available-rewards/page.js",
+  "/about/page": "app/about/page.js"
 }
